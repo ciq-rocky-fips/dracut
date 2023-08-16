@@ -24,16 +24,13 @@ installkernel() {
         _fipsmodules+="crc32c crct10dif ghash "
 
         # Ciphers:
-        _fipsmodules+="cipher_null des3_ede aes cfb dh ecdh "
+        _fipsmodules+="cipher_null aes cfb dh ecdh "
 
         # Modes/templates:
         _fipsmodules+="ecb cbc ctr xts gcm ccm authenc hmac cmac "
 
         # Compression algs:
         _fipsmodules+="deflate lzo zlib "
-
-        # PRNG algs:
-        _fipsmodules+="ansi_cprng "
 
         # Misc:
         _fipsmodules+="aead cryptomgr tcrypt crypto_user "

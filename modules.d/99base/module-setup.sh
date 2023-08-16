@@ -19,7 +19,7 @@ install() {
         sed ls flock cp mv dmesg rm ln rmmod mkfifo umount readlink setsid
     inst $(command -v modprobe) /sbin/modprobe
 
-    inst_multiple -o findmnt less kmod
+    inst_multiple -o findmnt less kmod truncate
 
     if [ ! -e "${initdir}/bin/sh" ]; then
         inst_multiple bash

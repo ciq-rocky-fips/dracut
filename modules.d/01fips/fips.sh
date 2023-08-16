@@ -2,6 +2,12 @@
 
 mount_boot()
 {
+    if [ $# -ne 1 ]; then
+        mount_opts="ro"
+    else
+        mount_opts="$1"
+    fi
+
     boot=$(getarg boot=)
 
     if [ -n "$boot" ]; then
@@ -44,9 +50,9 @@ mount_boot()
 
         [ -e "$boot" ] || return 1
 
-        mkdir /boot
+        mkdir /boot >&/dev/null
         info "Mounting $boot as /boot"
-        mount -oro "$boot" /boot || return 1
+        mount -o "$mount_opts" "$boot" /boot || return 1
     elif [ -d "$NEWROOT/boot" ]; then
         rm -fr -- /boot
         ln -sf "$NEWROOT/boot" /boot
@@ -69,9 +75,26 @@ do_rhevh_check()
     return 0
 }
 
+# corrupt the file given by the integrity= kernel command line parameter
+corrupt_file() {
+  local integrity
+  integrity=$(getarg integrity=)
+  echo "corrupt file: [$integrity]"
+  if [[ $integrity == "" ]]
+  then
+    echo "Nothing to corrupt"
+  else
+    echo "corrupting file $integrity"
+    echo "x" >> $integrity
+  fi
+}
+
 fips_load_crypto()
 {
     FIPSMODULES=$(cat /etc/fipsmodules)
+
+    # Corrupt file as given with integrity=filefullpath on the kernel command line.
+    corrupt_file
 
     info "Loading and integrity checking all crypto modules"
     mv /etc/modprobe.d/fips.conf /etc/modprobe.d/fips.conf.bak
@@ -103,6 +126,7 @@ do_fips()
     local _s
     local _v
     local _module
+    local ret
 
     KERNEL=$(uname -r)
 
@@ -160,7 +184,45 @@ do_fips()
             return 1
         fi
 
-        (cd "${BOOT_IMAGE_HMAC%/*}" && sha512hmac -c "${BOOT_IMAGE_HMAC}") || return 1
+        if getarg "fips_corrupt_kernel"; then
+            warn "Corrupting kernel binary /boot/${BOOT_IMAGE_PATH}/${BOOT_IMAGE_NAME}"
+            mount_boot "remount,rw" || return 1
+            truncate -s +1 "/boot/${BOOT_IMAGE_PATH}/${BOOT_IMAGE_NAME}" || return 1
+            (cd "${BOOT_IMAGE_HMAC%/*}" && sha512hmac -c "${BOOT_IMAGE_HMAC}")
+            ret=$?
+            if [ $ret -eq 0 ]; then
+                warn "Corrupted /boot/${BOOT_IMAGE_PATH}/${BOOT_IMAGE_NAME} passed hmac !"
+                sleep 60
+                return 1
+            else
+                warn "Corrupted /boot/${BOOT_IMAGE_PATH}/${BOOT_IMAGE_NAME} successfully detected"
+            fi
+            warn "Restoring kernel binary /boot/${BOOT_IMAGE_PATH}/${BOOT_IMAGE_NAME}"
+            truncate -s -1 "/boot/${BOOT_IMAGE_PATH}/${BOOT_IMAGE_NAME}" || return 1
+            mount_boot "remount,ro" || return 1
+            return ${ret}
+        elif getarg "fips_corrupt_sha512hmac"; then
+            echo "Corrupting sha512hmac binary /usr/bin/sha512hmac" > /dev/kmsg
+            mount_boot "remount,rw" || return 1
+            truncate -s +1 "/usr/bin/sha512hmac" || return 1
+            (sha512hmac -c "/usr/bin/sha512hmac")
+            ret=$?
+            if [ $ret -eq 0 ]; then
+                echo "Corrupted /usr/bin/sha512hmac passed hmac. It should not have passed!" > /dev/kmsg
+                sleep 60
+                ret=0 # Let the system boot which is the failure case.
+            else
+                echo "Corrupted /usr/bin/sha512hmac successfully detected. Failing boot as expected." > /dev/kmsg
+                ret=1 # Fail boot which is expected.
+            fi
+            # Always restore the filesystem.
+            echo "Restoring sha512hmac binary/usr/bin/sha512hmac" > /dev/kmsg
+            truncate -s -1 "/usr/bin/sha512hmac" || return 1
+            mount_boot "remount,ro" || return 1
+            return ${ret}
+        else
+            (cd "${BOOT_IMAGE_HMAC%/*}" && sha512hmac -c "${BOOT_IMAGE_HMAC}") || return 1
+        fi
     fi
 
     info "All initrd crypto checks done"
