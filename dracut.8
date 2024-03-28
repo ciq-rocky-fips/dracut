@@ -1,0 +1,2035 @@
+'\" t
+.\"     Title: dracut
+.\"    Author: [see the "AUTHORS" section]
+.\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
+.\"      Date: 10/09/2018
+.\"    Manual: dracut
+.\"    Source: dracut
+.\"  Language: English
+.\"
+.TH "DRACUT" "8" "10/09/2018" "dracut" "dracut"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+dracut \- low\-level tool for generating an initramfs/initrd image
+.SH "SYNOPSIS"
+.sp
+\fBdracut\fR [\fIOPTION\&...\fR] [\fI<image>\fR [\fI<kernel version>\fR]]
+.SH "DESCRIPTION"
+.sp
+Create an initramfs <image> for the kernel with the version <kernel version>\&. If <kernel version> is omitted, then the version of the actual running kernel is used\&. If <image> is omitted or empty, then the default location /boot/initramfs\-<kernel version>\&.img is used\&.
+.sp
+dracut creates an initial image used by the kernel for preloading the block device modules (such as IDE, SCSI or RAID) which are needed to access the root filesystem, mounting the root filesystem and booting into the real system\&.
+.sp
+At boot time, the kernel unpacks that archive into RAM disk, mounts and uses it as initial root file system\&. All finding of the root device happens in this early userspace\&.
+.sp
+Initramfs images are also called "initrd"\&.
+.sp
+For a complete list of kernel command line options see \fBdracut\&.cmdline\fR(7)\&.
+.sp
+If you are dropped to an emergency shell, while booting your initramfs, the file \fI/run/initramfs/rdsosreport\&.txt\fR is created, which can be saved to a (to be mounted by hand) partition (usually /boot) or a USB stick\&. Additional debugging info can be produced by adding \fBrd\&.debug\fR to the kernel command line\&. \fI/run/initramfs/rdsosreport\&.txt\fR contains all logs and the output of some tools\&. It should be attached to any report about dracut problems\&.
+.SH "USAGE"
+.sp
+To create a initramfs image, the most simple command is:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# dracut
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+This will generate a general purpose initramfs image, with all possible functionality resulting of the combination of the installed dracut modules and system tools\&. The image is /boot/initramfs\-\fI<kernel version>\fR\&.img and contains the kernel modules of the currently active kernel with version \fI<kernel version>\fR\&.
+.sp
+If the initramfs image already exists, dracut will display an error message, and to overwrite the existing image, you have to use the \-\-force option\&.
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# dracut \-\-force
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+If you want to specify another filename for the resulting image you would issue a command like:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# dracut foobar\&.img
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+To generate an image for a specific kernel version, the command would be:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# dracut foobar\&.img 2\&.6\&.40\-1\&.rc5\&.f20
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+A shortcut to generate the image at the default location for a specific kernel version is:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# dracut \-\-kver 2\&.6\&.40\-1\&.rc5\&.f20
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+If you want to create lighter, smaller initramfs images, you may want to specify the \-\-hostonly or \-H option\&. Using this option, the resulting image will contain only those dracut modules, kernel modules and filesystems, which are needed to boot this specific machine\&. This has the drawback, that you can\(cqt put the disk on another controller or machine, and that you can\(cqt switch to another root filesystem, without recreating the initramfs image\&. The usage of the \-\-hostonly option is only for experts and you will have to keep the broken pieces\&. At least keep a copy of a general purpose image (and corresponding kernel) as a fallback to rescue your system\&.
+.SS "Inspecting the Contents"
+.sp
+To see the contents of the image created by dracut, you can use the lsinitrd tool\&.
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# lsinitrd | less
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+To display the contents of a file in the initramfs also use the lsinitrd tool:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# lsinitrd \-f /etc/ld\&.so\&.conf
+include ld\&.so\&.conf\&.d/*\&.conf
+.fi
+.if n \{\
+.RE
+.\}
+.SS "Adding dracut Modules"
+.sp
+Some dracut modules are turned off by default and have to be activated manually\&. You can do this by adding the dracut modules to the configuration file \fI/etc/dracut\&.conf\fR or \fI/etc/dracut\&.conf\&.d/myconf\&.conf\fR\&. See \fBdracut\&.conf\fR(5)\&. You can also add dracut modules on the command line by using the \-a or \-\-add option:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# dracut \-\-add bootchart initramfs\-bootchart\&.img
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+To see a list of available dracut modules, use the \-\-list\-modules option:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# dracut \-\-list\-modules
+.fi
+.if n \{\
+.RE
+.\}
+.SS "Omitting dracut Modules"
+.sp
+Sometimes you don\(cqt want a dracut module to be included for reasons of speed, size or functionality\&. To do this, either specify the omit_dracutmodules variable in the \fIdracut\&.conf\fR or \fI/etc/dracut\&.conf\&.d/myconf\&.conf\fR configuration file (see \fBdracut\&.conf\fR(5)), or use the \-o or \-\-omit option on the command line:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# dracut \-o "multipath lvm" no\-multipath\-lvm\&.img
+.fi
+.if n \{\
+.RE
+.\}
+.SS "Adding Kernel Modules"
+.sp
+If you need a special kernel module in the initramfs, which is not automatically picked up by dracut, you have the use the \-\-add\-drivers option on the command line or the drivers vaiable in the \fI/etc/dracut\&.conf\fR or \fI/etc/dracut\&.conf\&.d/myconf\&.conf\fR configuration file (see \fBdracut\&.conf\fR(5)):
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# dracut \-\-add\-drivers mymod initramfs\-with\-mymod\&.img
+.fi
+.if n \{\
+.RE
+.\}
+.SS "Boot parameters"
+.sp
+An initramfs generated without the "hostonly" mode, does not contain any system configuration files (except for some special exceptions), so the configuration has to be done on the kernel command line\&. With this flexibility, you can easily boot from a changed root partition, without the need to recompile the initramfs image\&. So, you could completly change your root partition (move it inside a md raid with encryption and LVM on top), as long as you specify the correct filesystem LABEL or UUID on the kernel command line for your root device, dracut will find it and boot from it\&.
+.sp
+The kernel command line can also be provided by the dhcp server with the root\-path option\&. See the section called \(lqNetwork Boot\(rq\&.
+.sp
+For a full reference of all kernel command line parameters, see \fBdracut\&.cmdline\fR(5)\&.
+.sp
+To get a quick start for the suitable kernel command line on your system, use the \fI\-\-print\-cmdline\fR option:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# dracut \-\-print\-cmdline
+ root=UUID=8b8b6f91\-95c7\-4da2\-831b\-171e12179081 rootflags=rw,relatime,discard,data=ordered rootfstype=ext4
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBSpecifying the root Device\fR
+.RS 4
+.sp
+This is the only option dracut really needs to boot from your root partition\&. Because your root partition can live in various environments, there are a lot of formats for the root= option\&. The most basic one is root=\fI<path to device node>\fR:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+root=/dev/sda2
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+Because device node names can change, dependent on the drive ordering, you are encouraged to use the filesystem identifier (UUID) or filesystem label (LABEL) to specify your root partition:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+root=UUID=19e9dda3\-5a38\-484d\-a9b0\-fa6b067d0331
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+or
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+root=LABEL=myrootpartitionlabel
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+To see all UUIDs or LABELs on your system, do:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# ls \-l /dev/disk/by\-uuid
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+or
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# ls \-l /dev/disk/by\-label
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+If your root partition is on the network see the section called \(lqNetwork Boot\(rq\&.
+.RE
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBKeyboard Settings\fR
+.RS 4
+.sp
+If you have to input passwords for encrypted disk volumes, you might want to set the keyboard layout and specify a display font\&.
+.sp
+A typical german kernel command would contain:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+rd\&.vconsole\&.font=latarcyrheb\-sun16 rd\&.vconsole\&.keymap=de\-latin1\-nodeadkeys rd\&.locale\&.LANG=de_DE\&.UTF\-8
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+Setting these options can override the setting stored on your system, if you use a modern init system, like systemd\&.
+.RE
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBBlacklisting Kernel Modules\fR
+.RS 4
+.sp
+Sometimes it is required to prevent the automatic kernel module loading of a specific kernel module\&. To do this, just add rd\&.blacklist=\fI<kernel module name>\fR, with \fI<kernel module name>\fR not containing the \fI\&.ko\fR suffix, to the kernel command line\&. For example:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+rd\&.driver\&.blacklist=mptsas rd\&.driver\&.blacklist=nouveau
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+The option can be specified multiple times on the kernel command line\&.
+.RE
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBSpeeding up the Boot Process\fR
+.RS 4
+.sp
+If you want to speed up the boot process, you can specify as much information for dracut on the kernel command as possible\&. For example, you can tell dracut, that you root partition is not on a LVM volume or not on a raid partition, or that it lives inside a specific crypto LUKS encrypted volume\&. By default, dracut searches everywhere\&. A typical dracut kernel command line for a plain primary or logical partition would contain:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+rd\&.luks=0 rd\&.lvm=0 rd\&.md=0 rd\&.dm=0
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+This turns off every automatic assembly of LVM, MD raids, DM raids and crypto LUKS\&.
+.sp
+Of course, you could also omit the dracut modules in the initramfs creation process, but then you would lose the posibility to turn it on on demand\&.
+.RE
+.SS "Injecting custom Files"
+.sp
+To add your own files to the initramfs image, you have several possibilities\&.
+.sp
+The \-\-include option let you specify a source path and a target path\&. For example
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# dracut \-\-include cmdline\-preset /etc/cmdline\&.d/mycmdline\&.conf initramfs\-cmdline\-pre\&.img
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+will create an initramfs image, where the file cmdline\-preset will be copied inside the initramfs to \fI/etc/cmdline\&.d/mycmdline\&.conf\fR\&. \-\-include can only be specified once\&.
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# mkdir \-p rd\&.live\&.overlay/etc/cmdline\&.d
+# mkdir \-p rd\&.live\&.overlay/etc/conf\&.d
+# echo "ip=dhcp" >> rd\&.live\&.overlay/etc/cmdline\&.d/mycmdline\&.conf
+# echo export FOO=testtest >> rd\&.live\&.overlay/etc/conf\&.d/testvar\&.conf
+# echo export BAR=testtest >> rd\&.live\&.overlay/etc/conf\&.d/testvar\&.conf
+# tree rd\&.live\&.overlay/
+rd\&.live\&.overlay/
+`\-\- etc
+    |\-\- cmdline\&.d
+    |   `\-\- mycmdline\&.conf
+    `\-\- conf\&.d
+        `\-\- testvar\&.conf
+
+# dracut \-\-include rd\&.live\&.overlay / initramfs\-rd\&.live\&.overlay\&.img
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+This will put the contents of the rd\&.live\&.overlay directory into the root of the initramfs image\&.
+.sp
+The \-\-install option let you specify several files, which will get installed in the initramfs image at the same location, as they are present on initramfs creation time\&.
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# dracut \-\-install \*(Aqstrace fsck\&.ext3 ssh\*(Aq initramfs\-dbg\&.img
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+This will create an initramfs with the strace, fsck\&.ext3 and ssh executables, together with the libraries needed to start those\&. The \-\-install option can be specified multiple times\&.
+.SS "Network Boot"
+.sp
+If your root partition is on a network drive, you have to have the network dracut modules installed to create a network aware initramfs image\&.
+.sp
+If you specify ip=dhcp on the kernel command line, then dracut asks a dhcp server about the ip address for the machine\&. The dhcp server can also serve an additional root\-path, which will set the root device for dracut\&. With this mechanism, you have static configuration on your client machine and a centralized boot configuration on your TFTP/DHCP server\&. If you can\(cqt pass a kernel command line, then you can inject \fI/etc/cmdline\&.d/mycmdline\&.conf\fR, with a method described in the section called \(lqInjecting custom Files\(rq\&.
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBReducing the Image Size\fR
+.RS 4
+.sp
+To reduce the size of the initramfs, you should create it with by omitting all dracut modules, which you know, you don\(cqt need to boot the machine\&.
+.sp
+You can also specify the exact dracut and kernel modules to produce a very tiny initramfs image\&.
+.sp
+For example for a NFS image, you would do:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# dracut \-m "nfs network  base" initramfs\-nfs\-only\&.img
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+Then you would boot from this image with your target machine and reduce the size once more by creating it on the target machine with the \-\-host\-only option:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# dracut \-m "nfs network base" \-\-host\-only initramfs\-nfs\-host\-only\&.img
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+This will reduce the size of the initramfs image significantly\&.
+.RE
+.SH "TROUBLESHOOTING"
+.sp
+If the boot process does not succeed, you have several options to debug the situation\&. Some of the basic operations are covered here\&. For more information you should also visit: \m[blue]\fBhttps://www\&.kernel\&.org/pub/linux/utils/boot/dracut/dracut\&.html\fR\m[]
+.SS "Identifying your problem area"
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 1.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  1." 4.2
+.\}
+Remove
+\fI\*(Aqrhgb\fR\*(Aq and
+\fI\*(Aqquiet\fR\*(Aq from the kernel command line
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 2.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  2." 4.2
+.\}
+Add
+\fI\*(Aqrd\&.shell\fR\*(Aq to the kernel command line\&. This will present a shell should dracut be unable to locate your root device
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 3.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  3." 4.2
+.\}
+Add
+\fI\*(Aqrd\&.shell rd\&.debug log_buf_len=1M\fR\*(Aq to the kernel command line so that dracut shell commands are printed as they are executed
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 4.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  4." 4.2
+.\}
+The file /run/initramfs/rdsosreport\&.txt is generated, which contains all the logs and the output of all significant tools, which are mentioned later\&.
+.RE
+.sp
+If you want to save that output, simply mount /boot by hand or insert an USB stick and mount that\&. Then you can store the output for later inspection\&.
+.SS "Information to include in your report"
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBAll bug reports\fR
+.RS 4
+.sp
+In all cases, the following should be mentioned and attached to your bug report:
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+The exact kernel command\-line used\&. Typically from the bootloader configuration file (e\&.g\&.
+\fI/boot/grub2/grub\&.cfg\fR) or from
+\fI/proc/cmdline\fR\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+A copy of your disk partition information from
+\fI/etc/fstab\fR, which might be obtained booting an old working initramfs or a rescue medium\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+Turn on dracut debugging (see
+\fIthe \fR\fI\fIdebugging dracut\fR\fR\fI section\fR), and attach the file /run/initramfs/rdsosreport\&.txt\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+If you use a dracut configuration file, please include
+\fI/etc/dracut\&.conf\fR
+and all files in
+\fI/etc/dracut\&.conf\&.d/*\&.conf\fR
+.RE
+.RE
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBNetwork root device related problems\fR
+.RS 4
+.sp
+This section details information to include when experiencing problems on a system whose root device is located on a network attached volume (e\&.g\&. iSCSI, NFS or NBD)\&. As well as the information from the section called \(lqAll bug reports\(rq, include the following information:
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+Please include the output of
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# /sbin/ifup <interfacename>
+# ip addr show
+.fi
+.if n \{\
+.RE
+.\}
+.RE
+.RE
+.SS "Debugging dracut"
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBConfigure a serial console\fR
+.RS 4
+.sp
+Successfully debugging dracut will require some form of console logging during the system boot\&. This section documents configuring a serial console connection to record boot messages\&.
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 1.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  1." 4.2
+.\}
+First, enable serial console output for both the kernel and the bootloader\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 2.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  2." 4.2
+.\}
+Open the file
+\fI/boot/grub2/grub\&.cfg\fR
+for editing\&. Below the line
+\fI\*(Aqtimeout=5\fR\*(Aq, add the following:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+serial \-\-unit=0 \-\-speed=9600
+terminal \-\-timeout=5 serial console
+.fi
+.if n \{\
+.RE
+.\}
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 3.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  3." 4.2
+.\}
+Also in
+\fI/boot/grub2/grub\&.cfg\fR, add the following boot arguemnts to the
+\fI\*(Aqkernel\fR\*(Aq line:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+console=tty0 console=ttyS0,9600
+.fi
+.if n \{\
+.RE
+.\}
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 4.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  4." 4.2
+.\}
+When finished, the
+\fI/boot/grub2/grub\&.cfg\fR
+file should look similar to the example below\&.
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+default=0
+timeout=5
+serial \-\-unit=0 \-\-speed=9600
+terminal \-\-timeout=5 serial console
+title Fedora (2\&.6\&.29\&.5\-191\&.fc11\&.x86_64)
+  root (hd0,0)
+  kernel /vmlinuz\-2\&.6\&.29\&.5\-191\&.fc11\&.x86_64 ro root=/dev/mapper/vg_uc1\-lv_root console=tty0 console=ttyS0,9600
+  initrd /dracut\-2\&.6\&.29\&.5\-191\&.fc11\&.x86_64\&.img
+.fi
+.if n \{\
+.RE
+.\}
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 5.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  5." 4.2
+.\}
+More detailed information on how to configure the kernel for console output can be found at
+\m[blue]\fBhttp://www\&.faqs\&.org/docs/Linux\-HOWTO/Remote\-Serial\-Console\-HOWTO\&.html#CONFIGURE\-KERNEL\fR\m[]\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 6.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  6." 4.2
+.\}
+Redirecting non\-interactive output
+.if n \{\
+.sp
+.\}
+.RS 4
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBNote\fR
+.ps -1
+.br
+You can redirect all non\-interactive output to
+\fI/dev/kmsg\fR
+and the kernel will put it out on the console when it reaches the kernel buffer by doing
+.sp .5v
+.RE
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# exec >/dev/kmsg 2>&1 </dev/console
+.fi
+.if n \{\
+.RE
+.\}
+.RE
+.RE
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBUsing the dracut shell\fR
+.RS 4
+.sp
+dracut offers a shell for interactive debugging in the event dracut fails to locate your root filesystem\&. To enable the shell:
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 1.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  1." 4.2
+.\}
+Add the boot parameter
+\fI\*(Aqrd\&.shell\fR\*(Aq to your bootloader configuration file (e\&.g\&.
+\fI/boot/grub2/grub\&.cfg\fR)
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 2.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  2." 4.2
+.\}
+Remove the boot arguments
+\fI\*(Aqrhgb\fR\*(Aq and
+\fI\*(Aqquiet\fR\*(Aq
+.sp
+A sample
+\fI/boot/grub2/grub\&.cfg\fR
+bootloader configuration file is listed below\&.
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+default=0
+timeout=5
+serial \-\-unit=0 \-\-speed=9600
+terminal \-\-timeout=5 serial console
+title Fedora (2\&.6\&.29\&.5\-191\&.fc11\&.x86_64)
+  root (hd0,0)
+  kernel /vmlinuz\-2\&.6\&.29\&.5\-191\&.fc11\&.x86_64 ro root=/dev/mapper/vg_uc1\-lv_root console=tty0 rd\&.shell
+  initrd /dracut\-2\&.6\&.29\&.5\-191\&.fc11\&.x86_64\&.img
+.fi
+.if n \{\
+.RE
+.\}
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 3.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  3." 4.2
+.\}
+If system boot fails, you will be dropped into a shell as seen in the example below\&.
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+No root device found
+Dropping to debug shell\&.
+
+#
+.fi
+.if n \{\
+.RE
+.\}
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 4.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  4." 4.2
+.\}
+Use this shell prompt to gather the information requested above (see
+the section called \(lqAll bug reports\(rq)\&.
+.RE
+.RE
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBAccessing the root volume from the dracut shell\fR
+.RS 4
+.sp
+From the dracut debug shell, you can manually perform the task of locating and preparing your root volume for boot\&. The required steps will depend on how your root volume is configured\&. Common scenarios include:
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+A block device (e\&.g\&.
+\fI/dev/sda7\fR)
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+A LVM logical volume (e\&.g\&.
+\fI/dev/VolGroup00/LogVol00\fR)
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+An encrypted device (e\&.g\&.
+\fI/dev/mapper/luks\-4d5972ea\-901c\-4584\-bd75\-1da802417d83\fR)
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+A network attached device (e\&.g\&.
+\fInetroot=iscsi:@192\&.168\&.0\&.4::3260::iqn\&.2009\-02\&.org\&.example:for\&.all\fR)
+.RE
+.sp
+The exact method for locating and preparing will vary\&. However, to continue with a successful boot, the objective is to locate your root volume and create a symlink \fI/dev/root\fR which points to the file system\&. For example, the following example demonstrates accessing and booting a root volume that is an encrypted LVM Logical volume\&.
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 1.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  1." 4.2
+.\}
+Inspect your partitions using parted
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# parted /dev/sda \-s p
+Model: ATA HTS541060G9AT00 (scsi)
+Disk /dev/sda: 60\&.0GB
+Sector size (logical/physical): 512B/512B
+Partition Table: msdos
+Number  Start   End     Size    Type      File system  Flags
+1      32\&.3kB  10\&.8GB  107MB   primary   ext4         boot
+2      10\&.8GB  55\&.6GB  44\&.7GB  logical                lvm
+.fi
+.if n \{\
+.RE
+.\}
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 2.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  2." 4.2
+.\}
+You recall that your root volume was a LVM logical volume\&. Scan and activate any logical volumes\&.
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# lvm vgscan
+# lvm vgchange \-ay
+.fi
+.if n \{\
+.RE
+.\}
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 3.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  3." 4.2
+.\}
+You should see any logical volumes now using the command blkid:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# blkid
+/dev/sda1: UUID="3de247f3\-5de4\-4a44\-afc5\-1fe179750cf7" TYPE="ext4"
+/dev/sda2: UUID="Ek4dQw\-cOtq\-5MJu\-OGRF\-xz5k\-O2l8\-wdDj0I" TYPE="LVM2_member"
+/dev/mapper/linux\-root: UUID="def0269e\-424b\-4752\-acf3\-1077bf96ad2c" TYPE="crypto_LUKS"
+/dev/mapper/linux\-home: UUID="c69127c1\-f153\-4ea2\-b58e\-4cbfa9257c5e" TYPE="ext3"
+/dev/mapper/linux\-swap: UUID="47b4d329\-975c\-4c08\-b218\-f9c9bf3635f1" TYPE="swap"
+.fi
+.if n \{\
+.RE
+.\}
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 4.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  4." 4.2
+.\}
+From the output above, you recall that your root volume exists on an encrypted block device\&. Following the guidance disk encryption guidance from the Installation Guide, you unlock your encrypted root volume\&.
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# UUID=$(cryptsetup luksUUID /dev/mapper/linux\-root)
+# cryptsetup luksOpen /dev/mapper/linux\-root luks\-$UUID
+Enter passphrase for /dev/mapper/linux\-root:
+Key slot 0 unlocked\&.
+.fi
+.if n \{\
+.RE
+.\}
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 5.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  5." 4.2
+.\}
+Next, make a symbolic link to the unlocked root volume
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# ln \-s /dev/mapper/luks\-$UUID /dev/root
+.fi
+.if n \{\
+.RE
+.\}
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 6.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  6." 4.2
+.\}
+With the root volume available, you may continue booting the system by exiting the dracut shell
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# exit
+.fi
+.if n \{\
+.RE
+.\}
+.RE
+.RE
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBAdditional dracut boot parameters\fR
+.RS 4
+.sp
+For more debugging options, see \fBdracut\&.cmdline\fR(7)\&.
+.RE
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBDebugging dracut on shutdown\fR
+.RS 4
+.sp
+To debug the shutdown sequence on systemd systems, you can \fIrd\&.break\fR on \fIpre\-shutdown\fR or \fIshutdown\fR\&.
+.sp
+To do this from an already booted system:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# mkdir \-p /run/initramfs/etc/cmdline\&.d
+# echo "rd\&.debug rd\&.break=pre\-shutdown rd\&.break=shutdown" > /run/initramfs/etc/cmdline\&.d/debug\&.conf
+# touch /run/initramfs/\&.need_shutdown
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+This will give you a dracut shell after the system pivot\(cqed back in the initramfs\&.
+.RE
+.SH "OPTIONS"
+.PP
+\fB\-\-kver\fR \fI<kernel version>\fR
+.RS 4
+set the kernel version\&. This enables to specify the kernel version, without specifying the location of the initramfs image\&. For example:
+.RE
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# dracut \-\-kver 3\&.5\&.0\-0\&.rc7\&.git1\&.2\&.fc18\&.x86_64
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+\fB\-f, \-\-force\fR
+.RS 4
+overwrite existing initramfs file\&.
+.RE
+.PP
+\fB\-a, \-\-add\fR\ \&\fI<list of dracut modules>\fR
+.RS 4
+add a space\-separated list of dracut modules to the default set of modules\&. This parameter can be specified multiple times\&.
+.if n \{\
+.sp
+.\}
+.RS 4
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBNote\fR
+.ps -1
+.br
+If [LIST] has multiple arguments, then you have to put these in quotes\&. For example:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# dracut \-\-add "module1 module2"  \&.\&.\&.
+.fi
+.if n \{\
+.RE
+.\}
+.sp .5v
+.RE
+.RE
+.PP
+\fB\-\-force\-add\fR\ \&\fI<list of dracut modules>\fR
+.RS 4
+force to add a space\-separated list of dracut modules to the default set of modules, when \-H is specified\&. This parameter can be specified multiple times\&.
+.if n \{\
+.sp
+.\}
+.RS 4
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBNote\fR
+.ps -1
+.br
+If [LIST] has multiple arguments, then you have to put these in quotes\&. For example:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# dracut \-\-force\-add "module1 module2"  \&.\&.\&.
+.fi
+.if n \{\
+.RE
+.\}
+.sp .5v
+.RE
+.RE
+.PP
+\fB\-o, \-\-omit\fR\ \&\fI<list of dracut modules>\fR
+.RS 4
+omit a space\-separated list of dracut modules\&. This parameter can be specified multiple times\&.
+.if n \{\
+.sp
+.\}
+.RS 4
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBNote\fR
+.ps -1
+.br
+If [LIST] has multiple arguments, then you have to put these in quotes\&. For example:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# dracut \-\-omit "module1 module2"  \&.\&.\&.
+.fi
+.if n \{\
+.RE
+.\}
+.sp .5v
+.RE
+.RE
+.PP
+\fB\-m, \-\-modules\fR \fI<list of dracut modules>\fR
+.RS 4
+specify a space\-separated list of dracut modules to call when building the initramfs\&. Modules are located in
+\fI/usr/lib/dracut/modules\&.d\fR\&. This parameter can be specified multiple times\&. This option forces dracut to only include the specified dracut modules\&. In most cases the "\-\-add" option is what you want to use\&.
+.if n \{\
+.sp
+.\}
+.RS 4
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBNote\fR
+.ps -1
+.br
+If [LIST] has multiple arguments, then you have to put these in quotes\&. For example:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# dracut \-\-modules "module1 module2"  \&.\&.\&.
+.fi
+.if n \{\
+.RE
+.\}
+.sp .5v
+.RE
+.RE
+.PP
+\fB\-d, \-\-drivers\fR\ \&\fI<list of kernel modules>\fR
+.RS 4
+specify a space\-separated list of kernel modules to exclusively include in the initramfs\&. The kernel modules have to be specified without the "\&.ko" suffix\&. This parameter can be specified multiple times\&.
+.if n \{\
+.sp
+.\}
+.RS 4
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBNote\fR
+.ps -1
+.br
+If [LIST] has multiple arguments, then you have to put these in quotes\&. For example:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# dracut \-\-drivers "kmodule1 kmodule2"  \&.\&.\&.
+.fi
+.if n \{\
+.RE
+.\}
+.sp .5v
+.RE
+.RE
+.PP
+\fB\-\-add\-drivers\fR\ \&\fI<list of kernel modules>\fR
+.RS 4
+specify a space\-separated list of kernel modules to add to the initramfs\&. The kernel modules have to be specified without the "\&.ko" suffix\&. This parameter can be specified multiple times\&.
+.if n \{\
+.sp
+.\}
+.RS 4
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBNote\fR
+.ps -1
+.br
+If [LIST] has multiple arguments, then you have to put these in quotes\&. For example:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# dracut \-\-add\-drivers "kmodule1 kmodule2"  \&.\&.\&.
+.fi
+.if n \{\
+.RE
+.\}
+.sp .5v
+.RE
+.RE
+.PP
+\fB\-\-force\-drivers\fR \fI<list of kernel modules>\fR
+.RS 4
+See add\-drivers above\&. But in this case it is ensured that the drivers are tried to be loaded early via modprobe\&.
+.if n \{\
+.sp
+.\}
+.RS 4
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBNote\fR
+.ps -1
+.br
+If [LIST] has multiple arguments, then you have to put these in quotes\&. For example:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# dracut \-\-force\-drivers "kmodule1 kmodule2"  \&.\&.\&.
+.fi
+.if n \{\
+.RE
+.\}
+.sp .5v
+.RE
+.RE
+.PP
+\fB\-\-omit\-drivers\fR\ \&\fI<list of kernel modules>\fR
+.RS 4
+specify a space\-separated list of kernel modules not to add to the initramfs\&. The kernel modules have to be specified without the "\&.ko" suffix\&. This parameter can be specified multiple times\&.
+.if n \{\
+.sp
+.\}
+.RS 4
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBNote\fR
+.ps -1
+.br
+If [LIST] has multiple arguments, then you have to put these in quotes\&. For example:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# dracut \-\-omit\-drivers "kmodule1 kmodule2"  \&.\&.\&.
+.fi
+.if n \{\
+.RE
+.\}
+.sp .5v
+.RE
+.RE
+.PP
+\fB\-\-filesystems\fR\ \&\fI<list of filesystems>\fR
+.RS 4
+specify a space\-separated list of kernel filesystem modules to exclusively include in the generic initramfs\&. This parameter can be specified multiple times\&.
+.if n \{\
+.sp
+.\}
+.RS 4
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBNote\fR
+.ps -1
+.br
+If [LIST] has multiple arguments, then you have to put these in quotes\&. For example:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# dracut \-\-filesystems "filesystem1 filesystem2"  \&.\&.\&.
+.fi
+.if n \{\
+.RE
+.\}
+.sp .5v
+.RE
+.RE
+.PP
+\fB\-k, \-\-kmoddir\fR\ \&\fI<kernel directory>\fR
+.RS 4
+specify the directory, where to look for kernel modules
+.RE
+.PP
+\fB\-\-fwdir\fR\ \&\fI<dir>[:<dir>\&...]++\fR
+.RS 4
+specify additional directories, where to look for firmwares\&. This parameter can be specified multiple times\&.
+.RE
+.PP
+\fB\-\-kernel\-cmdline <parameters>\fR
+.RS 4
+specify default kernel command line parameters
+.RE
+.PP
+\fB\-\-kernel\-only\fR
+.RS 4
+only install kernel drivers and firmware files
+.RE
+.PP
+\fB\-\-no\-kernel\fR
+.RS 4
+do not install kernel drivers and firmware files
+.RE
+.PP
+\fB\-\-early\-microcode\fR
+.RS 4
+Combine early microcode with ramdisk
+.RE
+.PP
+\fB\-\-no\-early\-microcode\fR
+.RS 4
+Do not combine early microcode with ramdisk
+.RE
+.PP
+\fB\-\-print\-cmdline\fR
+.RS 4
+print the kernel command line for the current disk layout
+.RE
+.PP
+\fB\-\-mdadmconf\fR
+.RS 4
+include local
+\fI/etc/mdadm\&.conf\fR
+.RE
+.PP
+\fB\-\-nomdadmconf\fR
+.RS 4
+do not include local
+\fI/etc/mdadm\&.conf\fR
+.RE
+.PP
+\fB\-\-lvmconf\fR
+.RS 4
+include local
+\fI/etc/lvm/lvm\&.conf\fR
+.RE
+.PP
+\fB\-\-nolvmconf\fR
+.RS 4
+do not include local
+\fI/etc/lvm/lvm\&.conf\fR
+.RE
+.PP
+\fB\-\-fscks\fR [LIST]
+.RS 4
+add a space\-separated list of fsck tools, in addition to
+\fIdracut\&.conf\fR\*(Aqs specification; the installation is opportunistic (non\-existing tools are ignored)
+.if n \{\
+.sp
+.\}
+.RS 4
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBNote\fR
+.ps -1
+.br
+If [LIST] has multiple arguments, then you have to put these in quotes\&. For example:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# dracut \-\-fscks "fsck\&.foo barfsck"  \&.\&.\&.
+.fi
+.if n \{\
+.RE
+.\}
+.sp .5v
+.RE
+.RE
+.PP
+\fB\-\-nofscks\fR
+.RS 4
+inhibit installation of any fsck tools
+.RE
+.PP
+\fB\-\-strip\fR
+.RS 4
+strip binaries in the initramfs (default)
+.RE
+.PP
+\fB\-\-nostrip\fR
+.RS 4
+do not strip binaries in the initramfs
+.RE
+.PP
+\fB\-\-hardlink\fR
+.RS 4
+hardlink files in the initramfs (default)
+.RE
+.PP
+\fB\-\-nohardlink\fR
+.RS 4
+do not hardlink files in the initramfs
+.RE
+.PP
+\fB\-\-prefix\fR\ \&\fI<dir>\fR
+.RS 4
+prefix initramfs files with the specified directory
+.RE
+.PP
+\fB\-\-noprefix\fR
+.RS 4
+do not prefix initramfs files (default)
+.RE
+.PP
+\fB\-h, \-\-help\fR
+.RS 4
+display help text and exit\&.
+.RE
+.PP
+\fB\-\-debug\fR
+.RS 4
+output debug information of the build process
+.RE
+.PP
+\fB\-v, \-\-verbose\fR
+.RS 4
+increase verbosity level (default is info(4))
+.RE
+.PP
+\fB\-q, \-\-quiet\fR
+.RS 4
+decrease verbosity level (default is info(4))
+.RE
+.PP
+\fB\-c, \-\-conf\fR\ \&\fI<dracut configuration file>\fR
+.RS 4
+specify configuration file to use\&.
+.sp
+Default:
+\fI/etc/dracut\&.conf\fR
+.RE
+.PP
+\fB\-\-confdir\fR\ \&\fI<configuration directory>\fR
+.RS 4
+specify configuration directory to use\&.
+.sp
+Default:
+\fI/etc/dracut\&.conf\&.d\fR
+.RE
+.PP
+\fB\-\-tmpdir\fR\ \&\fI<temporary directory>\fR
+.RS 4
+specify temporary directory to use\&.
+.sp
+Default:
+\fI/var/tmp\fR
+.RE
+.PP
+\fB\-\-sshkey\fR\ \&\fI<sshkey file>\fR
+.RS 4
+ssh key file used with ssh\-client module\&.
+.RE
+.PP
+\fB\-\-logfile\fR\ \&\fI<logfile>\fR
+.RS 4
+logfile to use; overrides any setting from the configuration files\&.
+.sp
+Default:
+\fI/var/log/dracut\&.log\fR
+.RE
+.PP
+\fB\-l, \-\-local\fR
+.RS 4
+activates the local mode\&. dracut will use modules from the current working directory instead of the system\-wide installed modules in
+\fI/usr/lib/dracut/modules\&.d\fR\&. This is useful when running dracut from a git checkout\&.
+.RE
+.PP
+\fB\-H, \-\-hostonly\fR
+.RS 4
+Host\-Only mode: Install only what is needed for booting the local host instead of a generic host and generate host\-specific configuration\&.
+.if n \{\
+.sp
+.\}
+.RS 4
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBWarning\fR
+.ps -1
+.br
+If chrooted to another root other than the real root device, use "\-\-fstab" and provide a valid
+\fI/etc/fstab\fR\&.
+.sp .5v
+.RE
+.RE
+.PP
+\fB\-N, \-\-no\-hostonly\fR
+.RS 4
+Disable Host\-Only mode
+.RE
+.sp
+\fB\-\-hostonly\-cmdline\fR: Store kernel command line arguments needed in the initramfs
+.sp
+\fB\-\-no\-hostonly\-cmdline\fR: Do not store kernel command line arguments needed in the initramfs
+.sp
+\fB\-\-no\-hostonly\-default\-device\fR: Do not generate implicit host devices like root, swap, fstab, etc\&. Use "\-\-mount" or "\-\-add\-device" to explicitly add devices as needed\&.
+.sp
+\fB\-\-hostonly\-i18n\fR: Install only needed keyboard and font files according to the host configuration (default)\&.
+.sp
+\fB\-\-no\-hostonly\-i18n\fR: Install all keyboard and font files available\&.
+.PP
+\fB\-\-persistent\-policy\fR \fI<policy>\fR
+.RS 4
+Use
+\fI<policy>\fR
+to address disks and partitions\&.
+\fI<policy>\fR
+can be any directory name found in /dev/disk\&. E\&.g\&. "by\-uuid", "by\-label"
+.RE
+.PP
+\fB\-\-fstab\fR
+.RS 4
+Use
+\fI/etc/fstab\fR
+instead of
+\fI/proc/self/mountinfo\fR\&.
+.RE
+.PP
+\fB\-\-add\-fstab\fR \fI<filename>\fR
+.RS 4
+Add entries of
+\fI<filename>\fR
+to the initramfs /etc/fstab\&.
+.RE
+.PP
+\fB\-\-mount\fR\ \&"\fI<device>\fR \fI<mountpoint>\fR \fI<filesystem type>\fR [\fI<filesystem options>\fR [\fI<dump frequency>\fR [\fI<fsck order>\fR]]]"
+.RS 4
+Mount
+\fI<device>\fR
+on
+\fI<mountpoint>\fR
+with
+\fI<filesystem type>\fR
+in the initramfs\&.
+\fI<filesystem options>\fR,
+\fI<dump options>\fR
+and
+\fI<fsck order>\fR
+can be specified, see fstab manpage for the details\&. The default
+\fI<filesystem options>\fR
+is "defaults"\&. The default
+\fI<dump frequency>\fR
+is "0"\&. the default
+\fI<fsck order>\fR
+is "2"\&.
+.RE
+.PP
+\fB\-\-mount\fR "\fI<mountpoint>\fR"
+.RS 4
+Like above, but
+\fI<device>\fR,
+\fI<filesystem type>\fR
+and
+\fI<filesystem options>\fR
+are determined by looking at the current mounts\&.
+.RE
+.PP
+\fB\-\-add\-device\fR \fI<device>\fR
+.RS 4
+Bring up
+\fI<device>\fR
+in initramfs,
+\fI<device>\fR
+should be the device name\&. This can be useful in hostonly mode for resume support when your swap is on LVM or an encrypted partition\&. [NB \-\-device can be used for compatibility with earlier releases]
+.RE
+.PP
+\fB\-i, \-\-include\fR \fI<SOURCE>\fR \fI<TARGET>\fR
+.RS 4
+include the files in the SOURCE directory into the TARGET directory in the final initramfs\&. If SOURCE is a file, it will be installed to TARGET in the final initramfs\&. This parameter can be specified multiple times\&.
+.RE
+.PP
+\fB\-I, \-\-install\fR \fI<file list>\fR
+.RS 4
+install the space separated list of files into the initramfs\&.
+.if n \{\
+.sp
+.\}
+.RS 4
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBNote\fR
+.ps -1
+.br
+If [LIST] has multiple arguments, then you have to put these in quotes\&. For example:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# dracut \-\-install "/bin/foo /sbin/bar"  \&.\&.\&.
+.fi
+.if n \{\
+.RE
+.\}
+.sp .5v
+.RE
+.RE
+.PP
+\fB\-\-install\-optional\fR \fI<file list>\fR
+.RS 4
+install the space separated list of files into the initramfs, if they exist\&.
+.RE
+.PP
+\fB\-\-gzip\fR
+.RS 4
+Compress the generated initramfs using gzip\&. This will be done by default, unless another compression option or \-\-no\-compress is passed\&. Equivalent to "\-\-compress=gzip \-9"
+.RE
+.PP
+\fB\-\-bzip2\fR
+.RS 4
+Compress the generated initramfs using bzip2\&.
+.if n \{\
+.sp
+.\}
+.RS 4
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBWarning\fR
+.ps -1
+.br
+Make sure your kernel has bzip2 decompression support compiled in, otherwise you will not be able to boot\&. Equivalent to "\-\-compress=bzip2"
+.sp .5v
+.RE
+.RE
+.PP
+\fB\-\-lzma\fR
+.RS 4
+Compress the generated initramfs using lzma\&.
+.if n \{\
+.sp
+.\}
+.RS 4
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBWarning\fR
+.ps -1
+.br
+Make sure your kernel has lzma decompression support compiled in, otherwise you will not be able to boot\&. Equivalent to "lzma \-\-compress=lzma \-9"
+.sp .5v
+.RE
+.RE
+.PP
+\fB\-\-xz\fR
+.RS 4
+Compress the generated initramfs using xz\&.
+.if n \{\
+.sp
+.\}
+.RS 4
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBWarning\fR
+.ps -1
+.br
+Make sure your kernel has xz decompression support compiled in, otherwise you will not be able to boot\&. Equivalent to "lzma \-\-compress=xz \-\-check=crc32 \-\-lzma2=dict=1MiB"
+.sp .5v
+.RE
+.RE
+.PP
+\fB\-\-lzo\fR
+.RS 4
+Compress the generated initramfs using lzop\&.
+.RE
+.if n \{\
+.sp
+.\}
+.RS 4
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBWarning\fR
+.ps -1
+.br
+.sp
+Make sure your kernel has lzo decompression support compiled in, otherwise you will not be able to boot\&.
+.sp .5v
+.RE
+.PP
+\fB\-\-lz4\fR
+.RS 4
+Compress the generated initramfs using lz4\&.
+.RE
+.if n \{\
+.sp
+.\}
+.RS 4
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBWarning\fR
+.ps -1
+.br
+.sp
+Make sure your kernel has lz4 decompression support compiled in, otherwise you will not be able to boot\&.
+.sp .5v
+.RE
+.PP
+\fB\-\-zstd\fR
+.RS 4
+Compress the generated initramfs using Zstandard\&.
+.RE
+.if n \{\
+.sp
+.\}
+.RS 4
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBWarning\fR
+.ps -1
+.br
+.sp
+Make sure your kernel has zstd decompression support compiled in, otherwise you will not be able to boot\&.
+.sp .5v
+.RE
+.PP
+\fB\-\-compress\fR\ \&\fI<compressor>\fR
+.RS 4
+Compress the generated initramfs using the passed compression program\&. If you pass it just the name of a compression program, it will call that program with known\-working arguments\&. If you pass a quoted string with arguments, it will be called with exactly those arguments\&. Depending on what you pass, this may result in an initramfs that the kernel cannot decompress\&. The default value can also be set via the
+\fIINITRD_COMPRESS\fR
+environment variable\&.
+.RE
+.PP
+\fB\-\-no\-compress\fR
+.RS 4
+Do not compress the generated initramfs\&. This will override any other compression options\&.
+.RE
+.PP
+\fB\-\-reproducible\fR
+.RS 4
+Create reproducible images\&.
+.RE
+.PP
+\fB\-\-no\-reproducible\fR
+.RS 4
+Do not create reproducible images\&.
+.RE
+.PP
+\fB\-\-list\-modules\fR
+.RS 4
+List all available dracut modules\&.
+.RE
+.PP
+\fB\-M, \-\-show\-modules\fR
+.RS 4
+Print included module\(cqs name to standard output during build\&.
+.RE
+.PP
+\fB\-\-keep\fR
+.RS 4
+Keep the initramfs temporary directory for debugging purposes\&.
+.RE
+.PP
+\fB\-\-printsize\fR
+.RS 4
+Print out the module install size
+.RE
+.sp
+\fB\-\-profile\fR: Output profile information of the build process
+.sp
+\fB\-\-ro\-mnt\fR: Mount / and /usr read\-only by default\&.
+.PP
+\fB\-L, \-\-stdlog\fR\ \&\fI<level>\fR
+.RS 4
+[0\-6] Specify logging level (to standard error)
+.RE
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+          0 \- suppress any messages
+          1 \- only fatal errors
+          2 \- all errors
+          3 \- warnings
+          4 \- info
+          5 \- debug info (here starts lots of output)
+          6 \- trace info (and even more)
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+\fB\-\-regenerate\-all\fR
+.RS 4
+Regenerate all initramfs images at the default location with the kernel versions found on the system\&. Additional parameters are passed through\&.
+.RE
+.PP
+\fB\-\-loginstall \fR\fB\fI<DIR>\fR\fR
+.RS 4
+Log all files installed from the host to
+\fI<DIR>\fR\&.
+.RE
+.PP
+\fB\-\-uefi\fR
+.RS 4
+Instead of creating an initramfs image, dracut will create an UEFI executable, which can be executed by an UEFI BIOS\&. The default output filename is
+\fI<EFI>/EFI/Linux/linux\-$kernel$\-<MACHINE_ID>\-<BUILD_ID>\&.efi\fR\&. <EFI> might be
+\fI/efi\fR,
+\fI/boot\fR
+or
+\fI/boot/efi\fR
+depending on where the ESP partition is mounted\&. The <BUILD_ID> is taken from BUILD_ID in
+\fI/usr/lib/os\-release\fR
+or if it exists
+\fI/etc/os\-release\fR
+and is left out, if BUILD_ID is non\-existant or empty\&.
+.RE
+.PP
+\fB\-\-no\-machineid\fR
+.RS 4
+affects the default output filename of
+\fB\-\-uefi\fR
+and will discard the <MACHINE_ID> part\&.
+.RE
+.PP
+\fB\-\-uefi\-stub \fR\fB\fI<FILE>\fR\fR
+.RS 4
+Specifies the UEFI stub loader, which will load the attached kernel, initramfs and kernel command line and boots the kernel\&. The default is
+\fI$prefix/lib/systemd/boot/efi/linux<EFI\-MACHINE\-TYPE\-NAME>\&.efi\&.stub\fR
+or
+\fI$prefix/lib/gummiboot/linux<EFI\-MACHINE\-TYPE\-NAME>\&.efi\&.stub\fR
+.RE
+.PP
+\fB\-\-kernel\-image \fR\fB\fI<FILE>\fR\fR
+.RS 4
+Specifies the kernel image, which to include in the UEFI executable\&. The default is
+\fI/lib/modules/<KERNEL\-VERSION>/vmlinuz\fR
+or
+\fI/boot/vmlinuz\-<KERNEL\-VERSION>\fR
+.RE
+.SH "ENVIRONMENT"
+.PP
+\fIINITRD_COMPRESS\fR
+.RS 4
+sets the default compression program\&. See
+\fB\-\-compress\fR\&.
+.RE
+.SH "FILES"
+.PP
+\fI/var/log/dracut\&.log\fR
+.RS 4
+logfile of initramfs image creation
+.RE
+.PP
+\fI/tmp/dracut\&.log\fR
+.RS 4
+logfile of initramfs image creation, if
+\fI/var/log/dracut\&.log\fR
+is not writable
+.RE
+.PP
+\fI/etc/dracut\&.conf\fR
+.RS 4
+see dracut\&.conf5
+.RE
+.PP
+\fI/etc/dracut\&.conf\&.d/*\&.conf\fR
+.RS 4
+see dracut\&.conf5
+.RE
+.PP
+\fI/usr/lib/dracut/dracut\&.conf\&.d/*\&.conf\fR
+.RS 4
+see dracut\&.conf5
+.RE
+.SS "Configuration in the initramfs"
+.PP
+\fI/etc/conf\&.d/\fR
+.RS 4
+Any files found in
+\fI/etc/conf\&.d/\fR
+will be sourced in the initramfs to set initial values\&. Command line options will override these values set in the configuration files\&.
+.RE
+.PP
+\fI/etc/cmdline\fR
+.RS 4
+Can contain additional command line options\&. Deprecated, better use /etc/cmdline\&.d/*\&.conf\&.
+.RE
+.PP
+\fI/etc/cmdline\&.d/*\&.conf\fR
+.RS 4
+Can contain additional command line options\&.
+.RE
+.SH "AVAILABILITY"
+.sp
+The dracut command is part of the dracut package and is available from \m[blue]\fBhttps://dracut\&.wiki\&.kernel\&.org\fR\m[]
+.SH "AUTHORS"
+.sp
+Harald Hoyer
+.sp
+Victor Lowther
+.sp
+Philippe Seewer
+.sp
+Warren Togami
+.sp
+Amadeusz Żołnowski
+.sp
+Jeremy Katz
+.sp
+David Dillow
+.sp
+Will Woods
+.SH "SEE ALSO"
+.sp
+\fBdracut\&.cmdline\fR(7) \fBdracut\&.conf\fR(5) \fBlsinitrd\fR(1)

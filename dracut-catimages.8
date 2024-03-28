@@ -1,0 +1,93 @@
+'\" t
+.\"     Title: dracut-catimages
+.\"    Author: [see the "AUTHORS" section]
+.\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
+.\"      Date: 10/09/2018
+.\"    Manual: dracut
+.\"    Source: dracut
+.\"  Language: English
+.\"
+.TH "DRACUT\-CATIMAGES" "8" "10/09/2018" "dracut" "dracut"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+dracut-catimages \- creates initial ramdisk image by concatenating images
+.SH "SYNOPSIS"
+.sp
+\fBdracut\-catimages\fR [\fIOPTION\fR\&...] \fI<initramfs base image>\fR [\fI<image>\fR\&...]
+.SH "DESCRIPTION"
+.sp
+dracut\-catimages creates an initial ramdisk image by concatenating several images from the command line and /boot/dracut/*\&.img
+.SH "OPTIONS"
+.PP
+\fB\-f, \-\-force\fR
+.RS 4
+overwrite existing initramfs file\&.
+.RE
+.PP
+\fB\-i, \-\-imagedir\fR
+.RS 4
+Directory with additional images to add (default: /boot/dracut/)
+.RE
+.PP
+\fB\-o, \-\-overlaydir\fR
+.RS 4
+Overlay directory, which contains additional files that will be used to create an additional image
+.RE
+.PP
+\fB\-\-nooverlay\fR
+.RS 4
+Do not use the overlay directory
+.RE
+.PP
+\fB\-\-noimagedir\fR
+.RS 4
+Do not use the additional image directory
+.RE
+.PP
+\fB\-h, \-\-help\fR
+.RS 4
+display help text and exit\&.
+.RE
+.PP
+\fB\-\-debug\fR
+.RS 4
+output debug information of the build process
+.RE
+.PP
+\fB\-v, \-\-verbose\fR
+.RS 4
+verbose output during the build process
+.RE
+.SH "FILES"
+.PP
+\fI/boot/dracut/*\&.img\fR
+.RS 4
+images to work with
+.RE
+.SH "AUTHORS"
+.sp
+Harald Hoyer
+.SH "AVAILABILITY"
+.sp
+The dracut\-catimages command is part of the dracut package and is available from \m[blue]\fBhttps://dracut\&.wiki\&.kernel\&.org\fR\m[]
+.SH "SEE ALSO"
+.sp
+\fBdracut\fR(8)
